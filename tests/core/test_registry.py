@@ -98,6 +98,33 @@ def test_get_plugin_returns_none_for_unknown(tmp_path):
         assert registry.get_plugin("unknown") is None
 
 
+def test_get_plugins_with_status_marks_unreachable_sources(tmp_path):
+    from swap.core import registry
+    reg_a = tmp_path / "a.json"
+    reg_a.write_text(json.dumps(SAMPLE_REG_A))
+    missing = tmp_path / "missing.json"
+
+    with patch("swap.core.config.get_registry_sources", return_value=[str(reg_a), str(missing)]):
+        plugins, statuses = registry.get_plugins_with_status()
+
+    assert "ssh" in plugins
+    assert (str(reg_a), True) in statuses
+    assert (str(missing), False) in statuses
+
+
+def test_get_plugins_with_status_distinguishes_empty_from_unreachable(tmp_path):
+    from swap.core import registry
+    reg_empty = tmp_path / "empty.json"
+    reg_empty.write_text(json.dumps({"version": 1, "plugins": {}}))
+
+    with patch("swap.core.config.get_registry_sources", return_value=[str(reg_empty)]):
+        plugins, statuses = registry.get_plugins_with_status()
+
+    # Reachable but empty — both status True AND empty plugin dict
+    assert plugins == {}
+    assert statuses == [(str(reg_empty), True)]
+
+
 def test_fetch_http_falls_back_to_stale_cache_on_error(tmp_path, monkeypatch):
     from swap.core import registry
     monkeypatch.setattr(registry, "CACHE_DIR", tmp_path)
