@@ -67,7 +67,7 @@ def test_install_runs_uv_pip_install(tmp_path):
     from swap.core import plugin_manager
     registry_data = {"install": "swap-myplug", "package": "swap-myplug"}
     with patch("swap.core.registry.get_plugin", return_value=registry_data):
-        with patch("subprocess.run") as mock_run:
+        with patch("swap.core.plugin_manager.subprocess.run") as mock_run:
             plugin_manager.install("myplug")
     mock_run.assert_called_once()
     cmd = mock_run.call_args[0][0]
@@ -87,3 +87,24 @@ def test_uninstall_raises_if_not_installed():
     with patch("swap.core.plugin_manager.get_installed_plugins", return_value={}):
         with pytest.raises(ValueError, match="not installed"):
             plugin_manager.uninstall("ghost")
+
+
+def test_uninstall_runs_uv_pip_uninstall():
+    from swap.core import plugin_manager
+    with patch("swap.core.plugin_manager.get_installed_plugins", return_value={"myplug": "swap-myplug"}):
+        with patch("swap.core.plugin_manager.subprocess.run") as mock_run:
+            plugin_manager.uninstall("myplug")
+    cmd = mock_run.call_args[0][0]
+    assert "uv" in cmd
+    assert "uninstall" in cmd
+    assert "swap-myplug" in cmd
+
+
+def test_scaffold_pyproject_handles_quotes_in_description(tmp_path):
+    from swap.core import plugin_manager
+    import tomllib
+    plugin_dir = plugin_manager.scaffold("myplug", tmp_path, 'A plugin with "quotes" and \\backslashes')
+    # The pyproject.toml must be valid TOML (parseable)
+    with open(plugin_dir / "pyproject.toml", "rb") as f:
+        data = tomllib.load(f)
+    assert "quotes" in data["project"]["description"]

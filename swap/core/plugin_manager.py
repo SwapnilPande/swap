@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from importlib.metadata import entry_points
@@ -60,11 +61,12 @@ def scaffold(name: str, path: Path, description: str) -> Path:
 
 
 def _pyproject(name: str, description: str) -> str:
+    desc = json.dumps(description)  # produces '"some description"' with proper escaping
     return f'''\
 [project]
 name = "swap-{name}"
 version = "0.1.0"
-description = "{description}"
+description = {desc}
 requires-python = ">=3.12"
 dependencies = ["click>=8.0"]
 
