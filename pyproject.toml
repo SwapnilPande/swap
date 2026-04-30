@@ -1,0 +1,24 @@
+[project]
+name = "swap"
+version = "0.1.0"
+description = "Personal utilities CLI, extensible via plugins"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.0",
+    "questionary>=2.0",
+    "requests>=2.28",
+    "tomli-w>=1.0",
+    "paramiko>=4.0",
+]
+
+[project.scripts]
+swap = "swap.cli:cli"
+
+[project.entry-points."swap.plugins"]
+ssh = "swap.builtin.ssh.cli:cli"
+plugins = "swap.builtin.plugins.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
