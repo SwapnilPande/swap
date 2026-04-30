@@ -94,10 +94,13 @@ def new(name: str, path: str):
 @click.argument("path", type=click.Path(exists=True))
 def dev_install(path: str):
     """Install a plugin in editable mode from a local path."""
-    subprocess.run(
-        ["uv", "pip", "install", "--python", sys.executable, "--editable", path],
-        check=True,
-    )
+    try:
+        subprocess.run(
+            ["uv", "pip", "install", "--python", sys.executable, "--editable", path],
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise click.ClickException(f"uv pip install failed (exit code {e.returncode})")
     click.secho("✓ Installed in dev mode.", fg="green")
 
 
