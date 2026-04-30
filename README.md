@@ -1,46 +1,50 @@
 # swap
 
-A beautiful, Python-based CLI tool containing all common useful utilities in one place.
+Personal utilities CLI, extensible via plugins.
 
-## Features
-
-### SSH Config Tool
-A terminal UI (TUI) powered by `textual` that simplifies the process of setting up new SSH hosts.
-
-- **Automatic Key Generation**: Generates `ed25519` key pairs if they don't already exist.
-- **Remote Key Deployment**: Connects via password authentication to push your public key to the remote host.
-- **Local Config Management**: Automatically updates your `~/.ssh/config` file with a new Host entry.
-- **Beautiful TUI**: Modern, responsive terminal interface.
-
-## Installation
-
-Ensure you have `uv` installed. Clone the repository and install it in editable mode:
+## Install
 
 ```bash
-uv pip install -e .
+curl -sSL https://raw.githubusercontent.com/swapnil/swap/main/install.sh | bash
+```
+
+Or for development:
+
+```bash
+uv tool install --editable .
 ```
 
 ## Usage
 
-Run the main utility:
-
 ```bash
-swap --help
+swap                      # show installed plugins
+swap plugins list         # browse available plugins
+swap plugins install ssh  # install a plugin
+swap ssh setup            # set up SSH key auth for a new host
+swap upgrade              # upgrade swap itself
 ```
 
-### Configure a New SSH Host
+## Plugins
 
-To launch the SSH configuration tool:
+swap is built around plugins. Each plugin is a separate Python package registered under the `swap.plugins` entry point group.
+
+Built-in plugins:
+- `ssh` — SSH key generation, key push, and `~/.ssh/config` management
+- `plugins` — browse, install, uninstall, and scaffold plugins
+
+## Developing a Plugin
 
 ```bash
-swap ssh-config
+swap plugins new myplugin       # scaffold boilerplate
+cd swap-myplugin
+swap plugins dev .              # install in editable mode
+swap myplugin example           # try it out
 ```
 
-Fill out the form with the host alias, IP address, username, and desired key name. The tool will handle the rest!
+## Dependencies
 
-## Development
-
-Dependencies:
-- `click`: CLI framework
-- `textual`: TUI framework
-- `paramiko`: SSH implementation
+- `click` — CLI framework
+- `questionary` — interactive prompts
+- `paramiko` — SSH
+- `requests` — registry fetching
+- `tomli-w` — config writes

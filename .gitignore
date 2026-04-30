@@ -25,3 +25,6 @@ env/
 .vscode/
 *.swp
 *.swo
+
+# Claude Code local state
+.claude/settings.local.json
