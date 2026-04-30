@@ -1,6 +1,8 @@
 import json
+import os
 import time
 import pytest
+import requests
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -62,7 +64,6 @@ def test_fetch_http_fetches_when_cache_stale(tmp_path, monkeypatch):
     cache_path.write_text(json.dumps(SAMPLE_REG_A))
     # Make the cache appear stale
     old_time = time.time() - registry.CACHE_TTL - 1
-    import os
     os.utime(cache_path, (old_time, old_time))
 
     mock_resp = MagicMock()
@@ -95,3 +96,20 @@ def test_get_plugin_returns_none_for_unknown(tmp_path):
     from swap.core import registry
     with patch("swap.core.registry.get_plugins", return_value={}):
         assert registry.get_plugin("unknown") is None
+
+
+def test_fetch_http_falls_back_to_stale_cache_on_error(tmp_path, monkeypatch):
+    from swap.core import registry
+    monkeypatch.setattr(registry, "CACHE_DIR", tmp_path)
+    url = "https://example.com/registry.json"
+    cache_path = registry._cache_path(url)
+    # Write stale cache (TTL expired)
+    cache_path.write_text(json.dumps(SAMPLE_REG_A))
+    old_time = time.time() - registry.CACHE_TTL - 1
+    os.utime(cache_path, (old_time, old_time))
+
+    with patch("requests.get", side_effect=requests.RequestException("network error")):
+        result = registry._fetch_source(url)
+
+    assert result is not None
+    assert result["plugins"]["ssh"]["description"] == "SSH tools"

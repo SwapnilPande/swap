@@ -44,9 +44,12 @@ def _fetch_source(url: str) -> Optional[dict]:
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         cache.write_text(json.dumps(data))
         return data
-    except Exception:
+    except requests.RequestException:
         if cache.exists():
-            return json.loads(cache.read_text())
+            try:
+                return json.loads(cache.read_text())
+            except json.JSONDecodeError:
+                return None
         return None
 
 
