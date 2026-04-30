@@ -5,7 +5,7 @@ Personal utilities CLI, extensible via plugins.
 ## Install
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/swapnil/swap/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/SwapnilPande/swap/main/install.sh | bash
 ```
 
 Or for development:

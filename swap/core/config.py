@@ -8,7 +8,7 @@ from typing import Any
 SWAP_HOME = Path.home() / ".swap"
 CONFIG_PATH = SWAP_HOME / "config.toml"
 
-_DEFAULT_REGISTRY = "https://raw.githubusercontent.com/swapnil/swap/main/registry.json"
+_DEFAULT_REGISTRY = "https://raw.githubusercontent.com/SwapnilPande/swap/main/registry.json"
 
 
 def _load() -> dict:

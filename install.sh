@@ -12,7 +12,7 @@ if ! command -v uv &>/dev/null; then
 fi
 
 # Install swap as a uv tool
-uv tool install git+https://github.com/swapnil/swap
+uv tool install git+https://github.com/SwapnilPande/swap
 
 echo ""
 echo "swap installed. Run 'swap' to get started."
