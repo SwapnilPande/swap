@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from swap.core import plugin_manager, registry
+from swap.core import plugin_manager, registry, style
 
 
 @click.group(name="plugins")
@@ -22,15 +22,29 @@ def list_plugins():
     installed = plugin_manager.get_installed_plugins()
 
     if not available:
-        click.secho("Registry unavailable. Installed plugins:", fg="yellow")
+        click.echo(style.warn("Registry unavailable.") + style.dim(" Showing installed plugins only:"))
+        click.echo()
         for name in sorted(installed):
-            click.secho(f"  ✓ {name}", fg="green")
+            click.echo(f"  {style.check()} {style.name(name)}")
         return
 
+    click.echo(style.header("Available plugins"))
     for name, info in sorted(available.items()):
         desc = info.get("description", "")
-        marker = click.style("✓", fg="green") if name in installed else " "
-        click.echo(f"  {marker} {name}  —  {desc}")
+        if name in installed:
+            marker = style.check()
+        else:
+            marker = style.bullet()
+        line = f"  {marker} {style.name(name)}"
+        if desc:
+            line += f"  {style.dim('— ' + desc)}"
+        click.echo(line)
+    click.echo()
+    click.echo(
+        style.dim("Install with ")
+        + style.value("swap plugins install <name>")
+        + style.dim(".")
+    )
 
 
 @cli.command()
@@ -39,14 +53,17 @@ def list_plugins():
 def install(name: str, upgrade: bool):
     """Install a plugin by name."""
     if plugin_manager.is_installed(name) and not upgrade:
-        click.secho(f"'{name}' is already installed. Use --upgrade to re-install.", fg="yellow")
+        click.echo(
+            style.warn(f"'{name}' is already installed.")
+            + style.dim(" Use --upgrade to re-install.")
+        )
         return
-    click.echo(f"Installing {name}...")
+    click.echo(style.dim(f"Installing {name}..."))
     try:
         plugin_manager.install(name, upgrade=upgrade)
     except ValueError as e:
         raise click.ClickException(str(e))
-    click.secho(f"✓ {name} installed.", fg="green")
+    click.echo(f"{style.check()} {style.success(f'{name} installed.')}")
 
 
 @cli.command()
@@ -57,7 +74,7 @@ def uninstall(name: str):
         plugin_manager.uninstall(name)
     except ValueError as e:
         raise click.ClickException(str(e))
-    click.secho(f"✓ {name} uninstalled.", fg="green")
+    click.echo(f"{style.check()} {style.success(f'{name} uninstalled.')}")
 
 
 @cli.command()
@@ -66,12 +83,12 @@ def upgrade(name: str):
     """Upgrade an installed plugin."""
     if not plugin_manager.is_installed(name):
         raise click.ClickException(f"'{name}' is not installed.")
-    click.echo(f"Upgrading {name}...")
+    click.echo(style.dim(f"Upgrading {name}..."))
     try:
         plugin_manager.install(name, upgrade=True)
     except ValueError as e:
         raise click.ClickException(str(e))
-    click.secho(f"✓ {name} upgraded.", fg="green")
+    click.echo(f"{style.check()} {style.success(f'{name} upgraded.')}")
 
 
 @cli.command()
@@ -84,10 +101,12 @@ def new(name: str, path: str):
         plugin_dir = plugin_manager.scaffold(name, Path(path).resolve(), description)
     except FileExistsError as e:
         raise click.ClickException(str(e))
-    click.secho(f"\n✓ Created {plugin_dir}", fg="green")
-    click.echo("\nNext steps:")
-    click.echo(f"  cd {plugin_dir}")
-    click.echo(f"  swap plugins dev {plugin_dir}")
+    click.echo()
+    click.echo(f"{style.check()} {style.success(f'Created {plugin_dir}')}")
+    click.echo()
+    click.echo(style.header("Next steps"))
+    click.echo(f"  {style.dim('cd')} {style.value(str(plugin_dir))}")
+    click.echo(f"  {style.dim('swap plugins dev')} {style.value(str(plugin_dir))}")
 
 
 @cli.command(name="dev")
@@ -101,7 +120,7 @@ def dev_install(path: str):
         )
     except subprocess.CalledProcessError as e:
         raise click.ClickException(f"uv pip install failed (exit code {e.returncode})")
-    click.secho("✓ Installed in dev mode.", fg="green")
+    click.echo(f"{style.check()} {style.success('Installed in dev mode.')}")
 
 
 @cli.command(name="registry-info")
