@@ -1,0 +1,97 @@
+import json
+import time
+import pytest
+from pathlib import Path
+from unittest.mock import patch, MagicMock
+
+SAMPLE_REG_A = {
+    "version": 1,
+    "plugins": {
+        "ssh": {"description": "SSH tools", "package": "swap-ssh", "install": "swap-ssh"},
+    },
+}
+SAMPLE_REG_B = {
+    "version": 1,
+    "plugins": {
+        "k8s": {"description": "K8s tools", "package": "swap-k8s", "install": "swap-k8s"},
+        "ssh": {"description": "SSH tools (override)", "package": "swap-ssh", "install": "swap-ssh"},
+    },
+}
+
+
+def test_fetch_local_file(tmp_path):
+    from swap.core import registry
+    reg_file = tmp_path / "registry.json"
+    reg_file.write_text(json.dumps(SAMPLE_REG_A))
+    result = registry._fetch_source(str(reg_file))
+    assert result["plugins"]["ssh"]["description"] == "SSH tools"
+
+
+def test_fetch_missing_local_returns_none(tmp_path):
+    from swap.core import registry
+    result = registry._fetch_source(str(tmp_path / "nonexistent.json"))
+    assert result is None
+
+
+def test_fetch_tilde_path(tmp_path, monkeypatch):
+    from swap.core import registry
+    reg_file = tmp_path / "registry.json"
+    reg_file.write_text(json.dumps(SAMPLE_REG_A))
+    # Patch Path.home to return tmp_path
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path))
+    result = registry._fetch_source("~/registry.json")
+    assert result is not None
+
+
+def test_fetch_http_uses_cache_when_fresh(tmp_path, monkeypatch):
+    from swap.core import registry
+    monkeypatch.setattr(registry, "CACHE_DIR", tmp_path)
+    url = "https://example.com/registry.json"
+    cache_path = registry._cache_path(url)
+    cache_path.write_text(json.dumps(SAMPLE_REG_A))
+    # Make the cache appear fresh (mtime = now)
+    result = registry._fetch_source(url)
+    assert result["plugins"]["ssh"]["description"] == "SSH tools"
+
+
+def test_fetch_http_fetches_when_cache_stale(tmp_path, monkeypatch):
+    from swap.core import registry
+    monkeypatch.setattr(registry, "CACHE_DIR", tmp_path)
+    url = "https://example.com/registry.json"
+    cache_path = registry._cache_path(url)
+    cache_path.write_text(json.dumps(SAMPLE_REG_A))
+    # Make the cache appear stale
+    old_time = time.time() - registry.CACHE_TTL - 1
+    import os
+    os.utime(cache_path, (old_time, old_time))
+
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = SAMPLE_REG_B
+    mock_resp.raise_for_status = MagicMock()
+
+    with patch("requests.get", return_value=mock_resp):
+        result = registry._fetch_source(url)
+
+    assert result["plugins"]["k8s"]["description"] == "K8s tools"
+
+
+def test_get_plugins_merges_sources(tmp_path, monkeypatch):
+    from swap.core import registry
+    reg_a = tmp_path / "a.json"
+    reg_b = tmp_path / "b.json"
+    reg_a.write_text(json.dumps(SAMPLE_REG_A))
+    reg_b.write_text(json.dumps(SAMPLE_REG_B))
+
+    with patch("swap.core.config.get_registry_sources", return_value=[str(reg_a), str(reg_b)]):
+        result = registry.get_plugins()
+
+    # Both plugins present; B's ssh overrides A's ssh
+    assert "ssh" in result
+    assert "k8s" in result
+    assert result["ssh"]["description"] == "SSH tools (override)"
+
+
+def test_get_plugin_returns_none_for_unknown(tmp_path):
+    from swap.core import registry
+    with patch("swap.core.registry.get_plugins", return_value={}):
+        assert registry.get_plugin("unknown") is None
