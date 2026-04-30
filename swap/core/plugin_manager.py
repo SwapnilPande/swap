@@ -22,6 +22,14 @@ def is_installed(plugin_name: str) -> bool:
     return plugin_name in get_installed_plugins()
 
 
+def get_installed_entry_point(plugin_name: str):
+    """Return the importlib EntryPoint for an installed plugin, or None."""
+    for ep in entry_points(group="swap.plugins"):
+        if ep.name == plugin_name:
+            return ep
+    return None
+
+
 def install(plugin_name: str, upgrade: bool = False) -> None:
     info = registry.get_plugin(plugin_name)
     if not info:

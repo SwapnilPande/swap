@@ -33,8 +33,8 @@ def cli(ctx: click.Context) -> None:
             click.echo()
             click.echo(
                 style.dim("Run ")
-                + style.value("swap <plugin> --help")
-                + style.dim(" to see what a plugin does, or ")
+                + style.value("swap plugins info <name>")
+                + style.dim(" for details, or ")
                 + style.value("swap plugins list")
                 + style.dim(" to browse more.")
             )

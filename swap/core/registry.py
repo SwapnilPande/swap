@@ -58,13 +58,25 @@ def get_plugins() -> dict[str, dict]:
 
     Later sources override earlier ones for the same plugin name.
     """
+    return get_plugins_with_status()[0]
+
+
+def get_plugins_with_status() -> tuple[dict[str, dict], list[tuple[str, bool]]]:
+    """Return (merged plugins, [(source_url, reachable), ...]).
+
+    'reachable' distinguishes a registry that returned valid JSON (even if
+    its plugin list was empty) from one that 404'd or failed to parse.
+    """
     sources = config.get_registry_sources()
     merged: dict[str, dict] = {}
+    statuses: list[tuple[str, bool]] = []
     for source in sources:
         data = _fetch_source(source)
-        if data and "plugins" in data:
+        reachable = data is not None and "plugins" in data
+        statuses.append((source, reachable))
+        if reachable:
             merged.update(data["plugins"])
-    return merged
+    return merged, statuses
 
 
 def get_plugin(name: str) -> Optional[dict]:
