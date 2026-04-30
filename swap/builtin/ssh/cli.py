@@ -6,6 +6,7 @@ import click
 import questionary
 
 from swap.builtin.ssh import core
+from swap.core import style
 
 
 @click.group(name="ssh")
@@ -72,8 +73,8 @@ def setup(alias, hostname, username, key_name, password, key_type):
         raise click.ClickException(str(e))
 
     click.echo()
-    click.echo("Done. Connect with: ", nl=False)
-    click.secho(f"ssh {alias}", fg="cyan")
+    click.echo(f"{style.success('Done.')} Connect with: ", nl=False)
+    click.echo(style.value(f"ssh {alias}"))
 
 
 def _step(msg: str) -> None:
@@ -81,8 +82,8 @@ def _step(msg: str) -> None:
 
 
 def _ok() -> None:
-    click.secho("✓", fg="green")
+    click.echo(style.check())
 
 
 def _skip(reason: str) -> None:
-    click.secho(f"skipped ({reason})", fg="yellow")
+    click.echo(style.warn(f"skipped ({reason})"))
