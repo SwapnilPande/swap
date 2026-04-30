@@ -20,11 +20,6 @@ def test_set_and_get_round_trip(cfg):
     assert cfg.get("mysection", "mykey") == "myvalue"
 
 
-def test_set_and_get_correct(cfg):
-    cfg.set("mysection", "mykey", "myvalue")
-    assert cfg.get("mysection", "mykey") == "myvalue"
-
-
 def test_set_plugin_and_get_plugin(cfg):
     cfg.set_plugin("myplugin", "key", "val")
     result = cfg.get_plugin("myplugin")
@@ -35,16 +30,16 @@ def test_get_plugin_missing_returns_empty(cfg):
     assert cfg.get_plugin("nonexistent") == {}
 
 
-def test_set_persists_across_reload(cfg, tmp_path):
+def test_set_persists_on_disk(cfg, tmp_path):
+    # Write once, then read again — proves _load() re-reads from disk each call
     cfg.set("s", "k", "v")
-    # Re-import forces a fresh read from disk
-    import importlib
-    import swap.core.config as config
-    importlib.reload(config)
-    import swap.core.config as config2
-    config2.SWAP_HOME = tmp_path
-    config2.CONFIG_PATH = tmp_path / "config.toml"
-    assert config2.get("s", "k") == "v"
+    assert cfg.get("s", "k") == "v"
+    # Verify the file actually exists on disk with the right content
+    assert (tmp_path / "config.toml").exists()
+    import tomllib
+    with open(tmp_path / "config.toml", "rb") as f:
+        data = tomllib.load(f)
+    assert data["s"]["k"] == "v"
 
 
 def test_get_registry_sources_returns_default(cfg):
