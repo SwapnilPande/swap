@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,28 +25,47 @@ def generate_keypair(key_path: Path, key_type: str = "ed25519") -> bool:
     if key_path.exists():
         return False
     key_path.parent.mkdir(mode=0o700, exist_ok=True)
-    subprocess.run(
+    result = subprocess.run(
         ["ssh-keygen", "-t", key_type, "-f", str(key_path), "-N", ""],
-        check=True,
+        check=False,
         capture_output=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(f"ssh-keygen failed: {result.stderr.decode().strip()}")
     return True
 
 
-def push_public_key(hostname: str, username: str, password: str, pub_key: str) -> None:
-    """Append pub_key to authorized_keys on the remote host via SSH."""
+def push_public_key(hostname: str, username: str, password: str, pub_key: str) -> bool:
+    """Push pub_key to authorized_keys on the remote host via SFTP.
+
+    Returns True if the key was appended, False if it was already present.
+    Uses SFTP to avoid shell injection. AutoAddPolicy is intentional for a personal tool.
+    """
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(hostname, username=username, password=password, timeout=10)
     try:
-        cmd = (
-            "mkdir -p ~/.ssh && chmod 700 ~/.ssh && "
-            f"echo '{pub_key}' >> ~/.ssh/authorized_keys && "
-            "chmod 600 ~/.ssh/authorized_keys"
-        )
-        _, stdout, stderr = client.exec_command(cmd)
-        if stdout.channel.recv_exit_status() != 0:
-            raise RuntimeError(f"Failed to push key: {stderr.read().decode()}")
+        with client.open_sftp() as sftp:
+            try:
+                sftp.stat(".ssh")
+            except FileNotFoundError:
+                sftp.mkdir(".ssh")
+                sftp.chmod(".ssh", 0o700)
+
+            existing = ""
+            try:
+                with sftp.open(".ssh/authorized_keys", "r") as f:
+                    existing = f.read().decode()
+            except (IOError, FileNotFoundError):
+                pass
+
+            if pub_key in existing:
+                return False
+
+            with sftp.open(".ssh/authorized_keys", "a") as f:
+                f.write(f"\n{pub_key}\n".encode())
+            sftp.chmod(".ssh/authorized_keys", 0o600)
+            return True
     finally:
         client.close()
 
@@ -69,7 +89,7 @@ def add_config_entry(
 
     if config_path.exists():
         content = config_path.read_text()
-        if f"Host {alias}" in content:
+        if re.search(rf"^Host\s+{re.escape(alias)}\s*$", content, re.MULTILINE):
             return False
         config_path.write_text(content + entry)
     else:
@@ -92,8 +112,14 @@ def setup(
     key_path = ssh_dir / key_name
 
     key_generated = generate_keypair(key_path, key_type)
-    pub_key = key_path.with_suffix(".pub").read_text().strip()
-    push_public_key(hostname, username, password, pub_key)
+    pub_key_path = key_path.with_suffix(".pub")
+    if not pub_key_path.exists():
+        raise FileNotFoundError(
+            f"Public key not found at {pub_key_path}. "
+            "Run generate_keypair() first or check key file integrity."
+        )
+    pub_key = pub_key_path.read_text().strip()
+    key_pushed = push_public_key(hostname, username, password, pub_key)
     config_updated = add_config_entry(alias, hostname, username, key_path)
 
     return SSHSetupResult(
@@ -102,6 +128,6 @@ def setup(
         username=username,
         key_path=key_path,
         key_generated=key_generated,
-        key_pushed=True,
+        key_pushed=key_pushed,
         config_updated=config_updated,
     )
