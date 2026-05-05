@@ -29,7 +29,7 @@ Adding a new first-party plugin = create `packages/swap-<name>/` (the `swap plug
 ### Plugin lifecycle (`swap/core/`)
 
 - `plugin_manager.py` — install/uninstall/scaffold. `install()` and `uninstall()` shell out to `uv pip --python sys.executable` so plugins land in swap's own env (the one `uv tool install` created), not the user's active venv. `scaffold()` writes a working `swap-<name>/` skeleton with the entry-point already wired.
-- `registry.py` — fetches and merges plugin registries. Each source is a JSON document with a `plugins` map; sources can be local paths, `~/...` paths, or HTTP(S) URLs. HTTP responses are cached at `~/.swap/registry-cache/<sha256>.json` for `CACHE_TTL` seconds (1h), with stale cache used as fallback on network failure. Multiple sources merge with later sources overriding earlier ones.
+- `registry.py` — fetches and merges plugin registries. Each source is a JSON document with a `plugins` map; sources can be local paths, `~/...` paths, or HTTP(S) URLs. HTTP responses are cached at `~/.swap/registry-cache/<sha256>.json` for `CACHE_TTL` seconds (3 min), with stale cache used as fallback on network failure. Multiple sources merge with later sources overriding earlier ones.
 - `config.py` — TOML-backed user config at `~/.swap/config.toml`. Registry sources come from `[registries].sources`; default is `_DEFAULT_REGISTRY` in this file. Note: paths in the user's home (`~/.swap/`) are real I/O — tests that touch config must monkeypatch `Path.home`.
 - `upgrade.py` — `swap upgrade` shells out to `uv tool upgrade swap`. Versioning behavior is documented in `CONTRIBUTING.md`.
 
