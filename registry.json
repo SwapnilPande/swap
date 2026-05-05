@@ -1,4 +1,15 @@
 {
   "version": 1,
-  "plugins": {}
+  "plugins": {
+    "ssh": {
+      "description": "SSH key management and host configuration.",
+      "package": "swap-ssh",
+      "install": "swap-ssh @ git+https://github.com/SwapnilPande/swap.git#subdirectory=packages/swap-ssh"
+    },
+    "agents": {
+      "description": "Schedule and manage background agent commands.",
+      "package": "swap-agents",
+      "install": "swap-agents @ git+https://github.com/SwapnilPande/swap.git#subdirectory=packages/swap-agents"
+    }
+  }
 }

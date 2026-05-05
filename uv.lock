@@ -2,6 +2,13 @@ version = 1
 revision = 1
 requires-python = ">=3.12"
 
+[manifest]
+members = [
+    "swap",
+    "swap-agents",
+    "swap-ssh",
+]
+
 [[package]]
 name = "bcrypt"
 version = "5.0.0"
@@ -484,13 +491,10 @@ wheels = [
 
 [[package]]
 name = "swap"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
-    { name = "croniter" },
-    { name = "paramiko" },
-    { name = "questionary" },
     { name = "requests" },
     { name = "tomli-w" },
 ]
@@ -498,20 +502,61 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
+    { name = "swap-agents" },
+    { name = "swap-ssh" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0" },
+    { name = "requests", specifier = ">=2.28" },
+    { name = "tomli-w", specifier = ">=1.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "swap-agents", editable = "packages/swap-agents" },
+    { name = "swap-ssh", editable = "packages/swap-ssh" },
+]
+
+[[package]]
+name = "swap-agents"
+version = "0.1.0"
+source = { editable = "packages/swap-agents" }
+dependencies = [
+    { name = "click" },
+    { name = "croniter" },
+    { name = "swap" },
+    { name = "tomli-w" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "croniter", specifier = ">=2.0" },
-    { name = "paramiko", specifier = ">=4.0" },
-    { name = "questionary", specifier = ">=2.0" },
-    { name = "requests", specifier = ">=2.28" },
+    { name = "swap", editable = "." },
     { name = "tomli-w", specifier = ">=1.0" },
 ]
 
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
+[[package]]
+name = "swap-ssh"
+version = "0.1.0"
+source = { editable = "packages/swap-ssh" }
+dependencies = [
+    { name = "click" },
+    { name = "paramiko" },
+    { name = "questionary" },
+    { name = "swap" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "click", specifier = ">=8.0" },
+    { name = "paramiko", specifier = ">=4.0" },
+    { name = "questionary", specifier = ">=2.0" },
+    { name = "swap", editable = "." },
+]
 
 [[package]]
 name = "tomli-w"
