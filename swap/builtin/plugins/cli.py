@@ -7,7 +7,7 @@ from pathlib import Path
 
 import click
 
-from swap.core import plugin_manager, registry, style
+from swap.core import config, plugin_manager, registry, style
 
 
 @click.group(name="plugins")
@@ -163,13 +163,29 @@ def install(name: str, upgrade: bool):
 
 @cli.command()
 @click.argument("name")
-def uninstall(name: str):
+@click.option("--purge", is_flag=True, help="Also delete the plugin's data directory.")
+def uninstall(name: str, purge: bool):
     """Uninstall a plugin."""
     try:
-        plugin_manager.uninstall(name)
+        plugin_manager.uninstall(name, purge=purge)
     except ValueError as e:
         raise click.ClickException(str(e))
     click.echo(f"{style.check()} {style.success(f'{name} uninstalled.')}")
+    if purge:
+        click.echo(style.dim(f"Data directory removed."))
+
+
+@cli.command(name="data-dir")
+@click.argument("name")
+def data_dir(name: str):
+    """Print the path to a plugin's data directory."""
+    if not plugin_manager.is_installed(name):
+        raise click.ClickException(f"'{name}' is not installed.")
+    try:
+        path = config.get_plugin_data_dir(name)
+    except ValueError as e:
+        raise click.ClickException(str(e))
+    click.echo(str(path))
 
 
 @cli.command()

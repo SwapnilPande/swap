@@ -100,6 +100,43 @@ def test_uninstall_runs_uv_pip_uninstall():
     assert "swap-myplug" in cmd
 
 
+def test_uninstall_purge_removes_data_dir(tmp_path, monkeypatch):
+    from swap.core import config, plugin_manager
+    monkeypatch.setattr(config, "SWAP_HOME", tmp_path)
+    data_dir = tmp_path / "data" / "myplug"
+    data_dir.mkdir(parents=True)
+    (data_dir / "file.txt").write_text("payload")
+
+    with patch("swap.core.plugin_manager.get_installed_plugins", return_value={"myplug": "swap-myplug"}):
+        with patch("swap.core.plugin_manager.subprocess.run"):
+            plugin_manager.uninstall("myplug", purge=True)
+
+    assert not data_dir.exists()
+
+
+def test_uninstall_without_purge_leaves_data_dir(tmp_path, monkeypatch):
+    from swap.core import config, plugin_manager
+    monkeypatch.setattr(config, "SWAP_HOME", tmp_path)
+    data_dir = tmp_path / "data" / "myplug"
+    data_dir.mkdir(parents=True)
+    (data_dir / "file.txt").write_text("payload")
+
+    with patch("swap.core.plugin_manager.get_installed_plugins", return_value={"myplug": "swap-myplug"}):
+        with patch("swap.core.plugin_manager.subprocess.run"):
+            plugin_manager.uninstall("myplug")
+
+    assert data_dir.exists()
+    assert (data_dir / "file.txt").read_text() == "payload"
+
+
+def test_uninstall_purge_with_no_data_dir_is_ok(tmp_path, monkeypatch):
+    from swap.core import config, plugin_manager
+    monkeypatch.setattr(config, "SWAP_HOME", tmp_path)
+    with patch("swap.core.plugin_manager.get_installed_plugins", return_value={"myplug": "swap-myplug"}):
+        with patch("swap.core.plugin_manager.subprocess.run"):
+            plugin_manager.uninstall("myplug", purge=True)
+
+
 def test_scaffold_pyproject_handles_quotes_in_description(tmp_path):
     from swap.core import plugin_manager
     import tomllib
