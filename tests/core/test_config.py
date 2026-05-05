@@ -46,3 +46,23 @@ def test_get_registry_sources_returns_default(cfg):
     sources = cfg.get_registry_sources()
     assert isinstance(sources, list)
     assert len(sources) >= 1
+
+
+def test_get_plugin_data_dir_creates_dir(cfg, tmp_path):
+    path = cfg.get_plugin_data_dir("foo")
+    assert path == tmp_path / "data" / "foo"
+    assert path.is_dir()
+
+
+def test_get_plugin_data_dir_is_idempotent(cfg, tmp_path):
+    path1 = cfg.get_plugin_data_dir("foo")
+    (path1 / "marker").write_text("hi")
+    path2 = cfg.get_plugin_data_dir("foo")
+    assert path1 == path2
+    assert (path2 / "marker").read_text() == "hi"
+
+
+@pytest.mark.parametrize("bad", ["../bar", "a/b", "a\\b", "..", ""])
+def test_get_plugin_data_dir_rejects_traversal(cfg, bad):
+    with pytest.raises(ValueError):
+        cfg.get_plugin_data_dir(bad)

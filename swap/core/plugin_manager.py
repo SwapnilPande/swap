@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from swap.core import registry
+from swap.core import config, registry
 
 
 def get_installed_plugins() -> dict[str, str]:
@@ -42,7 +43,7 @@ def install(plugin_name: str, upgrade: bool = False) -> None:
     subprocess.run(cmd, check=True)
 
 
-def uninstall(plugin_name: str) -> None:
+def uninstall(plugin_name: str, purge: bool = False) -> None:
     installed = get_installed_plugins()
     if plugin_name not in installed:
         raise ValueError(f"Plugin '{plugin_name}' is not installed.")
@@ -51,6 +52,11 @@ def uninstall(plugin_name: str) -> None:
         ["uv", "pip", "uninstall", "--python", sys.executable, package],
         check=True,
     )
+    if purge:
+        # Uninstall package first, then wipe data — a failed uninstall must not lose data.
+        data_dir = config.SWAP_HOME / "data" / plugin_name
+        if data_dir.exists():
+            shutil.rmtree(data_dir)
 
 
 def scaffold(name: str, path: Path, description: str) -> Path:

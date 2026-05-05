@@ -33,6 +33,8 @@ Built-in plugins (`ssh`, `plugins`) are registered as entry points in this repo'
 
 Each plugin exposes a top-level Click group via its entry point. By convention plugins keep CLI concerns in `cli.py` and pure logic in `core.py` so the logic is callable without going through Click — see `swap/builtin/ssh/` for the canonical example. The scaffolder in `plugin_manager._cli_template` / `_core_template` enforces this layout for new plugins.
 
+For persistent files beyond `config.toml` (scripts, keys, larger blobs), plugins call `from swap.core.config import get_plugin_data_dir` to get a writable `~/.swap/data/<plugin>/` Path (created on demand). The CLI exposes `swap plugins data-dir <name>` to print this path; `swap plugins uninstall <name> --purge` removes it.
+
 ### Registry entry format
 
 A plugin entry in a registry JSON looks like:
