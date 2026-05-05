@@ -11,7 +11,7 @@ import requests
 from swap.core import config
 
 CACHE_DIR = Path.home() / ".swap" / "registry-cache"
-CACHE_TTL = 3600  # seconds
+CACHE_TTL = 180  # seconds
 
 
 def _cache_path(url: str) -> Path:
