@@ -9,7 +9,7 @@ from pathlib import Path
 
 import click
 
-from swap.builtin.agents import core
+from swap_agents import core
 from swap.core import style
 
 

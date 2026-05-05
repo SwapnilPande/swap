@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import questionary
 
-from swap.builtin.ssh import core
+from swap_ssh import core
 from swap.core import style
 
 

@@ -1,0 +1,25 @@
+[project]
+name = "swap-ssh"
+version = "0.1.0"
+description = "SSH key management and host configuration for swap."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "swap",
+    "click>=8.0",
+    "questionary>=2.0",
+    "paramiko>=4.0",
+]
+
+[project.entry-points."swap.plugins"]
+ssh = "swap_ssh.cli:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["swap_ssh"]
+
+[tool.uv.sources]
+swap = { workspace = true }

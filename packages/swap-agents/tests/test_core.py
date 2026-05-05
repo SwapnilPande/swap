@@ -21,14 +21,14 @@ def isolated_swap_home(tmp_path, monkeypatch):
 
 
 def test_validate_name_accepts_simple(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.validate_name("triage")
     core.validate_name("my-agent_1")
 
 
 @pytest.mark.parametrize("bad", ["", "/foo", "..", "with space", "-leading", "a" * 65])
 def test_validate_name_rejects_bad(isolated_swap_home, bad):
-    from swap.builtin.agents import core
+    from swap_agents import core
     with pytest.raises(ValueError):
         core.validate_name(bad)
 
@@ -37,13 +37,13 @@ def test_validate_name_rejects_bad(isolated_swap_home, bad):
 
 
 def test_validate_schedule_expands_macros(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     assert core.validate_schedule("@hourly") == "0 * * * *"
     assert core.validate_schedule("@daily") == "0 0 * * *"
 
 
 def test_validate_schedule_rejects_garbage(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     with pytest.raises(ValueError):
         core.validate_schedule("nope")
     with pytest.raises(ValueError):
@@ -51,12 +51,12 @@ def test_validate_schedule_rejects_garbage(isolated_swap_home):
 
 
 def test_validate_schedule_accepts_steps(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     assert core.validate_schedule("*/5 * * * *") == "*/5 * * * *"
 
 
 def test_next_run_at_returns_future(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     base = 0.0
     nxt = core.next_run_at("@hourly", base=base)
     assert nxt > base
@@ -66,7 +66,7 @@ def test_next_run_at_returns_future(isolated_swap_home):
 
 
 def test_add_creates_config(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     a = core.add("foo", "@hourly", command="echo hello")
     assert a.name == "foo"
     assert a.schedule == "0 * * * *"
@@ -75,14 +75,14 @@ def test_add_creates_config(isolated_swap_home):
 
 
 def test_add_rejects_duplicate(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="echo")
     with pytest.raises(ValueError, match="already exists"):
         core.add("foo", "@hourly", command="echo")
 
 
 def test_add_requires_command_or_script(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     with pytest.raises(ValueError):
         core.add("foo", "@hourly")
     with pytest.raises(ValueError):
@@ -90,7 +90,7 @@ def test_add_requires_command_or_script(isolated_swap_home):
 
 
 def test_add_with_script_copies_and_chmod(tmp_path, isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     src = tmp_path / "in.sh"
     src.write_text("#!/bin/sh\necho hi\n")
     a = core.add("foo", "@hourly", script_source=src)
@@ -101,7 +101,7 @@ def test_add_with_script_copies_and_chmod(tmp_path, isolated_swap_home):
 
 
 def test_load_round_trip(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="echo hi", description="my agent")
     a = core.load("foo")
     assert a.command == "echo hi"
@@ -110,7 +110,7 @@ def test_load_round_trip(isolated_swap_home):
 
 
 def test_list_agents_returns_only_valid(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="x")
     core.add("bar", "@daily", command="y")
     # Stray dir without agent.toml should be ignored
@@ -120,7 +120,7 @@ def test_list_agents_returns_only_valid(isolated_swap_home):
 
 
 def test_remove_purge_clears_dir(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
 
     class NoopScheduler(core.Scheduler):
         def install(self, agent): pass
@@ -136,7 +136,7 @@ def test_remove_purge_clears_dir(isolated_swap_home, monkeypatch):
 
 
 def test_remove_without_purge_keeps_dir(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
 
     class NoopScheduler(core.Scheduler):
         def install(self, agent): pass
@@ -151,7 +151,7 @@ def test_remove_without_purge_keeps_dir(isolated_swap_home, monkeypatch):
 
 
 def test_enable_disable_round_trip(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
 
     installs: list[str] = []
     uninstalls: list[str] = []
@@ -175,19 +175,19 @@ def test_enable_disable_round_trip(isolated_swap_home, monkeypatch):
 
 
 def test_cron_to_launchd_simple_hourly(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     intervals = core.cron_to_launchd_intervals("0 * * * *")
     assert intervals == [{"Minute": 0}]
 
 
 def test_cron_to_launchd_specific_time(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     intervals = core.cron_to_launchd_intervals("30 9 * * *")
     assert intervals == [{"Minute": 30, "Hour": 9}]
 
 
 def test_cron_to_launchd_weekdays(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     intervals = core.cron_to_launchd_intervals("0 9 * * 1-5")
     assert len(intervals) == 5
     assert all(d["Hour"] == 9 and d["Minute"] == 0 for d in intervals)
@@ -195,7 +195,7 @@ def test_cron_to_launchd_weekdays(isolated_swap_home):
 
 
 def test_cron_to_launchd_too_many_intervals_errors(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     # "* * * * *" omits all fields (all-full), so total = 1 — that's fine.
     # But explicit lists explode: 50 minutes × 3 hours = 150 entries > 100 cap.
     with pytest.raises(ValueError, match="expands to"):
@@ -206,19 +206,19 @@ def test_cron_to_launchd_too_many_intervals_errors(isolated_swap_home):
 
 
 def test_cron_to_systemd_simple_hourly(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     out = core.cron_to_systemd_oncalendar("0 * * * *")
     assert out == ["*-*-* *:00:00"]
 
 
 def test_cron_to_systemd_weekdays_named(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     out = core.cron_to_systemd_oncalendar("0 9 * * 1-5")
     assert out == ["Mon,Tue,Wed,Thu,Fri *-*-* 09:00:00"]
 
 
 def test_cron_to_systemd_step_minute(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     out = core.cron_to_systemd_oncalendar("*/15 * * * *")
     assert out == ["*-*-* *:00,15,30,45:00"]
 
@@ -227,7 +227,7 @@ def test_cron_to_systemd_step_minute(isolated_swap_home):
 
 
 def test_launchd_install_writes_plist(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
     monkeypatch.setattr(core, "_LAUNCHD_DIR", isolated_swap_home / "LaunchAgents")
     monkeypatch.setattr(core.LaunchdScheduler, "_launchctl",
                         staticmethod(lambda args, *, check: None))
@@ -244,7 +244,7 @@ def test_launchd_install_writes_plist(isolated_swap_home, monkeypatch):
 
 
 def test_launchd_uninstall_removes_plist(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
     monkeypatch.setattr(core, "_LAUNCHD_DIR", isolated_swap_home / "LaunchAgents")
     monkeypatch.setattr(core.LaunchdScheduler, "_launchctl",
                         staticmethod(lambda args, *, check: None))
@@ -261,7 +261,7 @@ def test_launchd_uninstall_removes_plist(isolated_swap_home, monkeypatch):
 
 
 def test_systemd_install_writes_units(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
     monkeypatch.setattr(core, "_SYSTEMD_DIR", isolated_swap_home / "systemd")
     monkeypatch.setattr(core.SystemdUserScheduler, "_systemctl",
                         staticmethod(lambda args, *, check: None))
@@ -277,7 +277,7 @@ def test_systemd_install_writes_units(isolated_swap_home, monkeypatch):
 
 
 def test_systemd_uninstall_removes_units(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
     monkeypatch.setattr(core, "_SYSTEMD_DIR", isolated_swap_home / "systemd")
     monkeypatch.setattr(core.SystemdUserScheduler, "_systemctl",
                         staticmethod(lambda args, *, check: None))
@@ -293,7 +293,7 @@ def test_systemd_uninstall_removes_units(isolated_swap_home, monkeypatch):
 
 
 def test_crontab_install_round_trip(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
 
     storage = {"content": ""}
 
@@ -316,7 +316,7 @@ def test_crontab_install_round_trip(isolated_swap_home, monkeypatch):
 
 
 def test_crontab_strip_block_preserves_other_entries(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     content = (
         "# user line\n"
         "0 0 * * * /home/me/script\n"
@@ -335,7 +335,7 @@ def test_crontab_strip_block_preserves_other_entries(isolated_swap_home):
 
 
 def test_run_executes_and_writes_state(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="echo hello-from-agent")
     rc = core.run("foo")
     assert rc == 0
@@ -347,7 +347,7 @@ def test_run_executes_and_writes_state(isolated_swap_home):
 
 
 def test_run_captures_failure_exit_code(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="exit 7")
     rc = core.run("foo")
     assert rc == 7
@@ -356,7 +356,7 @@ def test_run_captures_failure_exit_code(isolated_swap_home):
 
 
 def test_run_truncates_log_each_run(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     core.add("foo", "@hourly", command="echo first")
     core.run("foo")
     core.add  # silence unused import warnings if any
@@ -371,7 +371,7 @@ def test_run_truncates_log_each_run(isolated_swap_home):
 
 
 def test_run_scheduled_skips_when_locked(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     import fcntl
 
     core.add("foo", "@hourly", command="echo hi")
@@ -391,7 +391,7 @@ def test_run_scheduled_skips_when_locked(isolated_swap_home):
 
 
 def test_run_manual_raises_when_locked(isolated_swap_home):
-    from swap.builtin.agents import core
+    from swap_agents import core
     import fcntl
 
     core.add("foo", "@hourly", command="echo hi")
@@ -411,7 +411,7 @@ def test_run_manual_raises_when_locked(isolated_swap_home):
 
 
 def test_get_scheduler_respects_env_override(isolated_swap_home, monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
     monkeypatch.setenv("SWAP_AGENTS_SCHEDULER", "crontab")
     assert isinstance(core.get_scheduler(), core.CrontabScheduler)
     monkeypatch.setenv("SWAP_AGENTS_SCHEDULER", "launchd")

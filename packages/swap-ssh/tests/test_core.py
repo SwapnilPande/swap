@@ -4,9 +4,9 @@ from unittest.mock import patch, MagicMock, call
 
 
 def test_generate_keypair_runs_ssh_keygen(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     key_path = tmp_path / "id_ed25519_test"
-    with patch("swap.builtin.ssh.core.subprocess.run") as mock_run:
+    with patch("swap_ssh.core.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=0)
         result = core.generate_keypair(key_path)
     assert result is True
@@ -18,26 +18,26 @@ def test_generate_keypair_runs_ssh_keygen(tmp_path):
 
 
 def test_generate_keypair_skips_existing(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     key_path = tmp_path / "id_ed25519_test"
     key_path.touch()
-    with patch("swap.builtin.ssh.core.subprocess.run") as mock_run:
+    with patch("swap_ssh.core.subprocess.run") as mock_run:
         result = core.generate_keypair(key_path)
     assert result is False
     mock_run.assert_not_called()
 
 
 def test_generate_keypair_raises_on_failure(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     key_path = tmp_path / "id_ed25519_test"
-    with patch("swap.builtin.ssh.core.subprocess.run") as mock_run:
+    with patch("swap_ssh.core.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(returncode=1, stderr=b"invalid key type")
         with pytest.raises(RuntimeError, match="ssh-keygen failed"):
             core.generate_keypair(key_path)
 
 
 def test_add_config_entry_creates_new_file(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     config_path = tmp_path / "config"
     key_path = tmp_path / "id_ed25519_test"
     result = core.add_config_entry("myserver", "192.168.1.1", "ubuntu", key_path, config_path)
@@ -50,7 +50,7 @@ def test_add_config_entry_creates_new_file(tmp_path):
 
 
 def test_add_config_entry_appends_to_existing(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     config_path = tmp_path / "config"
     config_path.write_text("Host existing\n    HostName 10.0.0.1\n")
     key_path = tmp_path / "id_ed25519_test"
@@ -62,7 +62,7 @@ def test_add_config_entry_appends_to_existing(tmp_path):
 
 
 def test_add_config_entry_skips_duplicate_alias(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     config_path = tmp_path / "config"
     config_path.write_text("Host myserver\n    HostName 10.0.0.1\n")
     key_path = tmp_path / "id_ed25519_test"
@@ -73,7 +73,7 @@ def test_add_config_entry_skips_duplicate_alias(tmp_path):
 
 def test_add_config_entry_no_substring_false_positive(tmp_path):
     """'myserver' should not match when config contains 'myserver-production'."""
-    from swap.builtin.ssh import core
+    from swap_ssh import core
     config_path = tmp_path / "config"
     config_path.write_text("Host myserver-production\n    HostName 10.0.0.1\n")
     key_path = tmp_path / "id_ed25519_test"
@@ -82,7 +82,7 @@ def test_add_config_entry_no_substring_false_positive(tmp_path):
 
 
 def test_push_public_key_uses_sftp(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
 
     mock_sftp = MagicMock()
     mock_sftp.__enter__ = MagicMock(return_value=mock_sftp)
@@ -106,7 +106,7 @@ def test_push_public_key_uses_sftp(tmp_path):
 
 
 def test_push_public_key_skips_duplicate():
-    from swap.builtin.ssh import core
+    from swap_ssh import core
 
     mock_sftp = MagicMock()
     mock_sftp.__enter__ = MagicMock(return_value=mock_sftp)
@@ -128,7 +128,7 @@ def test_push_public_key_skips_duplicate():
 
 
 def test_setup_orchestrates_all_steps(tmp_path):
-    from swap.builtin.ssh import core
+    from swap_ssh import core
 
     pub_key_content = "ssh-ed25519 AAAA testkey"
 
@@ -141,7 +141,7 @@ def test_setup_orchestrates_all_steps(tmp_path):
     with patch.object(core, "generate_keypair", return_value=True) as mock_gen, \
          patch.object(core, "push_public_key", return_value=True) as mock_push, \
          patch.object(core, "add_config_entry", return_value=True) as mock_cfg, \
-         patch("swap.builtin.ssh.core.Path.home", return_value=tmp_path):
+         patch("swap_ssh.core.Path.home", return_value=tmp_path):
 
         result = core.setup("myalias", "myhost", "myuser", "mykey", "mypass")
 

@@ -17,7 +17,7 @@ def isolated(tmp_path, monkeypatch):
 
 @pytest.fixture
 def noop_scheduler(monkeypatch):
-    from swap.builtin.agents import core
+    from swap_agents import core
 
     class NoopScheduler(core.Scheduler):
         def install(self, agent): pass
@@ -28,7 +28,7 @@ def noop_scheduler(monkeypatch):
 
 
 def test_add_command(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     result = runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "echo hi"])
     assert result.exit_code == 0, result.output
@@ -36,14 +36,14 @@ def test_add_command(isolated, noop_scheduler):
 
 
 def test_add_invalid_schedule(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     result = runner.invoke(cli, ["add", "foo", "--schedule", "nonsense", "--command", "x"])
     assert result.exit_code != 0
 
 
 def test_list_shows_added(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "x"])
     runner.invoke(cli, ["add", "bar", "--schedule", "@daily", "--command", "y"])
@@ -54,7 +54,7 @@ def test_list_shows_added(isolated, noop_scheduler):
 
 
 def test_show_outputs_config(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "echo hi", "--description", "d"])
     result = runner.invoke(cli, ["show", "foo"])
@@ -64,8 +64,8 @@ def test_show_outputs_config(isolated, noop_scheduler):
 
 
 def test_remove_purge_clears_dir(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
-    from swap.builtin.agents import core
+    from swap_agents.cli import cli
+    from swap_agents import core
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "x"])
     d = core.agent_dir("foo")
@@ -76,7 +76,7 @@ def test_remove_purge_clears_dir(isolated, noop_scheduler):
 
 
 def test_run_executes_and_returns_exit_code(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "exit 0"])
     result = runner.invoke(cli, ["run", "foo"])
@@ -84,7 +84,7 @@ def test_run_executes_and_returns_exit_code(isolated, noop_scheduler):
 
 
 def test_run_propagates_failure_exit_code(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "exit 3"])
     result = runner.invoke(cli, ["run", "foo"])
@@ -92,7 +92,7 @@ def test_run_propagates_failure_exit_code(isolated, noop_scheduler):
 
 
 def test_tail_shows_log(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "echo bananas"])
     runner.invoke(cli, ["run", "foo"])
@@ -102,7 +102,7 @@ def test_tail_shows_log(isolated, noop_scheduler):
 
 
 def test_status_before_first_run(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
+    from swap_agents.cli import cli
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "x"])
     result = runner.invoke(cli, ["status", "foo"])
@@ -111,8 +111,8 @@ def test_status_before_first_run(isolated, noop_scheduler):
 
 
 def test_disable_then_enable(isolated, noop_scheduler):
-    from swap.builtin.agents.cli import cli
-    from swap.builtin.agents import core
+    from swap_agents.cli import cli
+    from swap_agents import core
     runner = CliRunner()
     runner.invoke(cli, ["add", "foo", "--schedule", "@hourly", "--command", "x"])
     result = runner.invoke(cli, ["disable", "foo"])
